@@ -1,0 +1,34 @@
+# Format code, documentation, and comments cleanly
+max_width = 120
+wrap_comments = true
+comment_width = 120
+format_code_in_doc_comments = true
+normalize_doc_attributes = true
+normalize_comments = true
+doc_comment_code_block_width = 100
+edition = "2024"
+style_edition = "2024"
+
+# Use spaces, never tabs
+hard_tabs = false
+tab_spaces = 4
+
+# Reorder and group imports: std, external, then crate
+reorder_imports = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+imports_layout = "HorizontalVertical"
+
+# Reorder modules automatically
+reorder_modules = true
+reorder_impl_items = true
+
+# Ensure Unix newlines (and rustfmt will keep a trailing newline)
+newline_style = "Unix"
+
+# Format macros and strings consistently
+format_macro_bodies = true
+format_strings = true
+
+# Prefer consistent wrapping near the max width
+use_small_heuristics = "Max"

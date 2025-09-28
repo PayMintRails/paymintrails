@@ -1,0 +1,15 @@
+# Formats all keys in `Cargo.toml` files (full-file key reordering).
+# Other `.toml` files keep their existing key order (no reordering by default).
+# Excludes `target/` and `.direnv/` from formatting and checks.
+# Reference: https://taplo.tamasfe.dev/configuration/file.html#configuration-file
+
+exclude = ["**/target/**", "**/.direnv/**"]
+
+[formatting]
+reorder_keys = false
+
+[[rule]]
+include = ["**/Cargo.toml"]
+
+[rule.formatting]
+reorder_keys = true
