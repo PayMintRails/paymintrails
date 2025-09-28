@@ -1,0 +1,14 @@
+[package]
+edition.workspace = true
+license-file.workspace = true
+name = "paymint-cli"
+publish = false
+rust-version.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "paymintctl"
+path = "src/main.rs"
+
+[dependencies]
+paymint_core = { path = "../core", package = "paymint-core" }
