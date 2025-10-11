@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -19,6 +21,7 @@
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       fenix,
       crane,
       flake-utils,
@@ -29,6 +32,8 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        unstable = nixpkgs-unstable.legacyPackages.${system};
 
         inherit (pkgs) lib;
 
@@ -204,12 +209,16 @@
 
           # Extra interactive-only tools; cargo and rustc are provided by default.
           packages = with pkgs; [
-            just
             sccache
             # Nightly rust-analyzer
             fenix.packages.${system}.rust-analyzer
             # Nightly rustfmt
             fenix.packages.${system}.latest.rustfmt
+            # From nixpkgs-unstable
+            unstable.gh
+            unstable.git-cliff
+            unstable.just
+            unstable.typos
           ];
 
           # Caching: use sccache automatically
