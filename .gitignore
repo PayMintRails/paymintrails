@@ -2,5 +2,11 @@
 result
 result-*
 
+# Ignore `cargo build` outputs
+/target/
+
 # Ignore automatically generated direnv output
 .direnv
+
+# Local-only files/folders that won't accidentally be added to git
+*.local.*
