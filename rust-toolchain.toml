@@ -1,6 +1,6 @@
 [toolchain]
 channel = "1.90"
-components = ["clippy", "rustfmt", "rust-src"]
+components = ["clippy", "llvm-tools-preview", "rustfmt", "rust-src"]
 
 targets = [
   "aarch64-apple-darwin",

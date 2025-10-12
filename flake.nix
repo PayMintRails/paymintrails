@@ -31,7 +31,15 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        overlays = [
+          (final: prev: {
+            cargo-llvm-cov = prev.callPackage ./.cargo/cargo-llvm-cov.nix { };
+          })
+        ];
+
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
 
         unstable = nixpkgs-unstable.legacyPackages.${system};
 
@@ -210,10 +218,12 @@
           # Extra interactive-only tools; cargo and rustc are provided by default.
           packages = with pkgs; [
             sccache
-            # Nightly rust-analyzer
+
+            # Nightly rust-analyzer, llvm-tools-preview, and rustfmt
             fenix.packages.${system}.rust-analyzer
-            # Nightly rustfmt
+            fenix.packages.${system}.latest.llvm-tools-preview
             fenix.packages.${system}.latest.rustfmt
+
             # From nixpkgs-unstable
             unstable.gh
             unstable.git-cliff

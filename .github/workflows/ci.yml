@@ -1,0 +1,150 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RUST_BACKTRACE: full
+
+jobs:
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: 'nightly', components: rustfmt }
+        env: { RUSTUP_TOOLCHAIN: 'nightly' }
+      - uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
+        with: { tool: taplo-cli@0.10.0 }
+      - name: Check Rust formatting
+        run: cargo +nightly fmt --all --check
+      - name: Check TOML formatting
+        run: taplo fmt --check
+
+  lint:
+    name: Run Linter
+    runs-on: ubuntu-24.04
+    env: { RUSTUP_TOOLCHAIN: '1.85.0' }
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: '1.85.0', components: clippy }
+      - name: Run Clippy
+        run: cargo clippy --all --all-targets -- --deny warnings
+
+  typos:
+    name: Check Spelling
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - name: Spell check with typos
+        uses: crate-ci/typos@80c8a4945eec0f6d464eaf9e65ed98ef085283d1 # v1.38.1
+
+  audit:
+    name: Audit Dependencies
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        checks:
+          - advisories
+          - bans licenses sources
+    # Prevent sudden announcement of a new advisory from failing ci:
+    continue-on-error: ${{ matrix.checks == 'advisories' }}
+    env: { RUSTUP_TOOLCHAIN: '1.85.0' }
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: '1.85.0', components: clippy }
+      - uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
+        with: { tool: cargo-deny@0.18.5 }
+      - name: Check dependency ${{ matrix.checks }}
+        run: cargo deny check ${{ matrix.checks }}
+
+  test:
+    name: Test (${{ matrix.os }} / ${{ matrix.partition }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-15
+          - ubuntu-24.04
+        partition:
+          - count:1/2
+          - count:2/2
+      fail-fast: false
+    env:
+      RUSTUP_TOOLCHAIN: 1.85.0
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: '1.85.0' }
+        env: { GITHUB_TOKEN: '${{ secrets.CI_SETUP }}' }
+      - uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
+        with: { tool: cargo-nextest@0.9.105 }
+      - name: Use Shared Compilation Cache only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+      - name: Set Rust caching env vars only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+      - name: Run nextest shard
+        run: >
+          cargo nextest run --no-tests=pass
+          --partition ${{ matrix.partition }}
+          --config-file ./.cargo/nextest.toml
+          --profile ci
+
+  coverage:
+    name: Coverage
+    needs: test
+    runs-on: ubuntu-24.04
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      RUSTUP_TOOLCHAIN: nightly
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: 'nightly', components: llvm-tools-preview }
+        env: { GITHUB_TOKEN: '${{ secrets.CI_SETUP }}' }
+      - uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
+        with: { tool: "cargo-nextest@0.9.105,cargo-llvm-cov@0.6.21" }
+      - name: Use Shared Compilation Cache only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+      - name: Set Rust caching env vars only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+      - name: Generate coverage report
+        run: | # Generate separate reports for nextest and doctests, and combine them
+          cargo +nightly llvm-cov --all-features --no-report nextest --config-file ./.cargo/nextest.toml --profile ci --no-tests=pass
+          cargo +nightly llvm-cov --no-report --doc
+          cargo +nightly llvm-cov report --doctests --lcov --output-path lcov.info
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        with: { fail_ci_if_error: true, files: lcov.info }
+      - name: Upload JUnit test report to Codecov
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        with: { fail_ci_if_error: true, files: target/nextest/ci/junit.xml }

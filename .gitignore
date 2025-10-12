@@ -5,6 +5,9 @@ result-*
 # Ignore `cargo build` outputs
 /target/
 
+# Ignore coverage report
+lcov.info
+
 # Ignore automatically generated direnv output
 .direnv
 

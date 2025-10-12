@@ -13,6 +13,11 @@ db-path = "~/.cargo/advisory-db"
 # See https://spdx.org/licenses/ for list of possible licenses
 # [possible values: any SPDX 3.11 short identifier (+ optional exception)].
 allow = ["Apache-2.0", "MIT"]
+# The confidence threshold for detecting a license from license text.
+# The higher the value, the more closely the license text must be to the
+# canonical license text of a valid SPDX license file.
+# [possible values: any between 0.0 and 1.0].
+confidence-threshold = 0.8
 
 [licenses.private]
 # If true, ignores workspace crates that aren't published, or are only
@@ -23,5 +28,32 @@ ignore = true
 # More documentation about the 'bans' section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
 [bans]
-# Lint level for when multiple versions of the same crate are detected
-multiple-versions = "allow"
+# Fail if multiple versions of the same crate are detected. Consolidating
+#  versions keeps binary size small and avoids duplicated code paths.
+multiple-versions = "deny"
+# When duplicates are detected, highlight every offending dependency chain in
+# the report, making it easier to track the mismatched pulls.
+# * lowest-version - The path to the lowest versioned duplicate is highlighted
+# * simplest-path - The path to the version with the fewest edges is highlighted
+# * all - Both lowest-version and simplest-path are used
+highlight = "all"
+# List of crates to deny
+deny = [
+  { name = "openssl", reason = "Prefer rustls-only dependencies" },
+  { name = "openssl-sys" },
+]
+
+# This section is considered when running `cargo deny check sources`.
+# More documentation about the 'sources' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/sources/cfg.html
+[sources]
+# Using a registry or git source not in the allow list emits a warning but
+# doesn't fail the job. This gives us visibility into non-crates.io dependencies
+# without blocking the build.
+unknown-registry = "warn"
+unknown-git = "warn"
+# List of URLs for allowed crate registries. Defaults to the crates.io index
+# if not specified. If it is specified but empty, no registries are allowed.
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# List of URLs for allowed Git repositories
+allow-git = []
