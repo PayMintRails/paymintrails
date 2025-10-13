@@ -77,6 +77,26 @@ jobs:
       - name: Check dependency ${{ matrix.checks }}
         run: cargo deny check ${{ matrix.checks }}
 
+  msrv:
+    name: Check Rust version
+    runs-on: ubuntu-24.04
+    env: { RUSTUP_TOOLCHAIN: '1.85.0' }
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with: { cache: false, channel: '1.85.0' }
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@f45419ef14ff13c4459e1c4310c1ff046eff6b30 # cargo-binstall
+      - name: Install cargo-msrv
+        run: cargo binstall -y cargo-msrv
+      - name: Run cargo-msrv
+        shell: bash
+        run: |
+          for package in "cli" "core" "server"; do
+            echo "Checking MSRV for $package..."
+            cargo msrv --output-format json --path "crates/$package" verify 2>&1 | tail -n 1 | jq --exit-status '.result.is_compatible == true'
+          done
+
   test:
     name: Test (${{ matrix.os }} / ${{ matrix.partition }})
     runs-on: ${{ matrix.os }}
