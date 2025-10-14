@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
       - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
         with: { cache: false, channel: 'nightly', components: rustfmt }
         env: { RUSTUP_TOOLCHAIN: 'nightly' }
@@ -41,7 +40,6 @@ jobs:
     env: { RUSTUP_TOOLCHAIN: '1.85.0' }
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
       - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
         with: { cache: false, channel: '1.85.0', components: clippy }
       - name: Run Clippy
@@ -52,7 +50,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
       - name: Spell check with typos
         uses: crate-ci/typos@80c8a4945eec0f6d464eaf9e65ed98ef085283d1 # v1.38.1
 
@@ -69,7 +66,6 @@ jobs:
     env: { RUSTUP_TOOLCHAIN: '1.85.0' }
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
       - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
         with: { cache: false, channel: '1.85.0', components: clippy }
       - uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
@@ -113,7 +109,6 @@ jobs:
       RUSTUP_TOOLCHAIN: 1.85.0
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
       - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
         with: { cache: false, channel: '1.85.0' }
         env: { GITHUB_TOKEN: '${{ secrets.CI_SETUP }}' }
@@ -143,7 +138,7 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with: { fetch-depth: 0 }
+        with: { fetch-depth: 2 }
       - uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
         with: { cache: false, channel: 'nightly', components: llvm-tools-preview }
         env: { GITHUB_TOKEN: '${{ secrets.CI_SETUP }}' }
